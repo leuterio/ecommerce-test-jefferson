@@ -7,9 +7,9 @@ const cartsCreateURL = 'https://campaigns.apps.29next.com/api/v1/carts/'
 const ordersURL = 'https://campaigns.apps.29next.com/api/v1/orders/'
 
 const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': publicKey
-}
+  'Authorization': 'Bearer dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
+  'Content-Type': 'application/json'
+};
 
 const confirmationURL = "/thank-you.html";
 
