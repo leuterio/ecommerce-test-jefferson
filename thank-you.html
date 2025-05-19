@@ -8,6 +8,19 @@
     <meta name="referrer" content="no-referrer-when-downgrade" />
     <link rel="icon" type="image/x-icon" href="img/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="css/main.css">
+
+    <script async src="https://campaigns.apps.29next.com/js/v1/campaign/"></script>
+    <script>
+        window.addEventListener('load', function () {
+            nextCampaign.config({
+                apiKey: "dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui",
+            })
+            nextCampaign.event('page_view', {
+                title: document.title,
+                url: window.location.href
+            });
+        });
+    </script>
 </head>
 
 <body class="bg-checkout d-flex flex-column h-100">
@@ -93,7 +106,7 @@
     </footer>
 </body>
 <script type="text/javascript">
-const publicKey = "HJiDgB1BcNDWx0lJYvP79mqDeRN8d0EVN9DfqYLv";
+const publicKey = "dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui";
 const refId = sessionStorage.getItem('ref_id');
 const orderRef = '"Example Reference"'
 </script>

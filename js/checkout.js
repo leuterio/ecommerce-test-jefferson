@@ -111,83 +111,181 @@ const createCart = async () => {
  */
 
 const createOrder = async () => {
-  const formData = new FormData(formEl);
-  const data = Object.fromEntries(formData);
 
-  const orderData = {
-    campaign_id: "1062",
-    customer: {
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      phone: data.phone_number 
-    },
-    shipping_address: {
-      address1: data.shipping_address_line1,
-      city: data.shipping_address_line4,
-      country: data.shipping_country,
-      zip: data.shipping_postcode
-    },
-    packages: lineArr,
-    payment_method: "credit_card",
-    metadata: {
-      extended_warranty: false
+    console.log("create order");
+    const formData = new FormData(formEl);
+    const data = Object.fromEntries(formData);
+
+    btnCC.disabled = true;
+    btnCC.textContent = btnCC.dataset.loadingText;
+    validErrBlock.innerHTML = ``
+
+    const orderData = {
+        "user": {
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "email": data.email,
+        },
+        "lines": lineArr,
+
+        "use_default_shipping_address": false,
+
+        "use_default_billing_address": false,
+        "billing_same_as_shipping_address": data.billing_same_as_shipping_address,
+        "payment_detail": {
+            "payment_method": data.payment_method,
+            "card_token": data.card_token,
+        },
+        "shipping_address": {
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "line1": data.shipping_address_line1,
+            "line4": data.shipping_address_line4,
+            "state": data.shipping_state,
+            "postcode": data.shipping_postcode,
+            "phone_number": data.phone_number,
+            "country": data.shipping_country
+        },
+        "shipping_method": data.shipping_method,
+        "success_url": campaign.nextStep(nextURL)
     }
-  };
 
-  try {
-    const response = await fetch('https://api.29next.com/v1/campaigns/orders', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(orderData)
-    });
-    const result = await response.json();
 
-    if (!response.ok) throw new Error(result.error || "Erro na API");
-    
-    console.log("Pedido criado:", result);
-    window.location.href = "thank-you.html";
+    console.log(orderData);
 
-  } catch (error) {
-    console.error("Falha ao criar pedido:", error);
-    validErrBlock.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-    btnCC.disabled = false;
-  }
-};
+    try {
+        const response = await fetch(ordersURL, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(orderData),
+        });
+        const result = await response.json()
+
+        // Some examples of error handling from the API to expand on
+        if (!response.ok && result.non_field_errors) {
+
+            btnCC.disabled = false;
+            btnCC.textContent = btnCC.dataset.text;
+
+            console.log ('Something went wrong', result);
+            let error = result.non_field_errors;
+            validErrBlock.innerHTML = `
+                <div class="alert alert-danger">
+                    ${error}
+                </div>
+            `;
+            return;
+
+        } else if (!response.ok && result.postcode) {
+
+            btnCC.disabled = false;
+            btnCC.textContent = btnCC.dataset.text;
+
+            console.log ('ZIP is incorrect', result);
+            let error = result.postcode;
+            validErrBlock.innerHTML = `
+                <div class="alert alert-danger">
+                    API Response Error: ${error}
+                </div>
+            `;
+            return;
+        
+        } else if (!response.ok && result.shipping_address) {
+
+            btnCC.disabled = false;
+            btnCC.textContent = btnCC.dataset.text;
+
+            console.log ('Phone number is not accepted', result);
+            let error = result.shipping_address.phone_number;
+            validErrBlock.innerHTML = `
+                <div class="alert alert-danger">
+                    API Response Error: ${error}
+                </div>
+            `;
+            return;
+        
+        } else if (!response.ok) {
+            
+            btnCC.disabled = false;
+            btnCC.textContent = btnCC.dataset.text;
+            
+            console.log ('Something went wrong', result);
+            let error = Object.values(result)[0];
+            document.getElementById("payment-error-block").innerHTML = `
+                <div class="alert alert-danger">
+                    ${error}
+                </div>
+            `;
+            return;
+        }
+
+        sessionStorage.setItem('ref_id', result.ref_id);
+
+        if (!result.payment_complete_url && result.number) {
+
+            location.href = campaign.nextStep(nextURL);
+
+        } else if (result.payment_complete_url) {
+
+            window.location.href = result.payment_complete_url;
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+
+}
 
 /**
  * Use Create Order with PayPal
  */
 
 const createPayPalOrder = async () => {
-  const orderData = {
-    campaign_id: "1062",
-    customer: {
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      phone: data.phone_number
-    },
-    packages: lineArr,
-    payment_method: "paypal"
-  };
+    console.log("create order paypal order");
+    const formData = new FormData(formEl);
+    const data = Object.fromEntries(formData);
+    btnPaypal.disabled = true;
+    const orderPPData = {
+        "user": {
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "email": data.email,
+        },
+        "lines": lineArr,
+        "payment_detail": {
+            "payment_method": data.payment_method,
+        },
+        "shipping_method": data.shipping_method,
+        "success_url": campaign.nextStep(nextURL)
+    }
 
-  try {
-    const response = await fetch('https://api.29next.com/v1/campaigns/orders', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(orderData)
-    });
-    const result = await response.json();
+    try {
+        const response = await fetch(ordersURL, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(orderPPData),
+        });
+        const result = await response.json()
 
-    if (!response.ok) throw new Error(result.error || "Erro no PayPal");
-    
-    window.location.href = result.payment_complete_url;
+        if (!response.ok) {
+            console.log('Something went wrong');
+            console.log(orderPPData);
+            btnPaypal.disabled = false;
+            return;
+        }
 
-  } catch (error) {
-    console.error("Falha no PayPal:", error);
-  }
-};
+        console.log(result)
+
+        sessionStorage.setItem('ref_id', result.ref_id);
+
+        window.location.href = result.payment_complete_url;
+
+    } catch (error) {
+        console.log(error);
+    }
+
+
+}
 const retrieveCampaign = campaign.once(getCampaign);
 
 retrieveCampaign();
@@ -419,14 +517,6 @@ btnPaypal.addEventListener('click', event => {
         });
 });
 
-btnCC.addEventListener('click', async (event) => {
-  event.preventDefault();
-  if (!validateForm()) return; 
-
-  if (lineArr.length === 0) {
-    validErrBlock.innerHTML = `<div class="alert alert-danger">Selecione um produto.</div>`;
-    return;
-  }
-
-  await createOrder(); 
+btnCC.addEventListener('click', event => {
+    formEl.requestSubmit();
 });
