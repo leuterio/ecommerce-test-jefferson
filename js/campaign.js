@@ -7,7 +7,7 @@ const cartsCreateURL = 'https://campaigns.apps.29next.com/api/v1/carts/'
 const ordersURL = 'https://campaigns.apps.29next.com/api/v1/orders/'
 
 const headers = {
-  'Authorization': 'Bearer dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
+  'Authorization': 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
   'Content-Type': 'application/json'
 };
 
