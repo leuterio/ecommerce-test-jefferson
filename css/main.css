@@ -13637,7 +13637,7 @@ body {
   font-weight: 700;
 }
 
-.offer {
+.offer, .warranty-box {
   width: 100%;
   background: white;
   border-radius: 10px;
@@ -13840,4 +13840,13 @@ ul.up-list li {
 #bankcard-number {
   height: calc(3.5rem + 2px);
   line-height: 1.25;
+}
+
+.warranty-check-container {
+  margin-left: 25px;
+  margin-bottom: 15px;
+}
+
+.warranty-text {
+  font-size: 14px;
 }
