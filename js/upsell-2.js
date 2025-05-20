@@ -40,11 +40,11 @@ const createUpsell = async () => {
 
     const quantity = parseInt(quantitySelect.value || "1", 10);
 
-    // Obter dados da garantia
+    // warranty data
     const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
     const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
 
-    // Criar array de itens
+    // items array
     const upsellLineItems = [
         {
             package_id: packageId,

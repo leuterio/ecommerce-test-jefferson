@@ -73,12 +73,12 @@ const handleWarrantySelection = (selected) => {
     const selectedOffer = document.querySelector('.offer.selected');
     const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
     
-    // Update sessionStorage
+    // update sessionStorage
     if (selected) {
         sessionStorage.setItem("warranty_selected", "true");
         sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
         
-        // Add warranty to finalLineArr if not already present
+        // add warranty to finalLineArr
         if (!finalLineArr.some(item => item.package_id === warrantyPackageId)) {
             finalLineArr.push({
                 package_id: warrantyPackageId,
@@ -90,7 +90,7 @@ const handleWarrantySelection = (selected) => {
         sessionStorage.removeItem("warranty_selected");
         sessionStorage.removeItem("warranty_quantity");
         
-        // Remove warranty from finalLineArr
+        // remove warranty from finalLineArr
         finalLineArr = finalLineArr.filter(item => item.package_id !== warrantyPackageId);
     }
     
@@ -409,7 +409,7 @@ const calculateTotal = () => {
   let shippingPrice = parseFloat(selectedPackage.dataset.priceShipping);
   let checkoutTotal = packagePrice + shippingPrice;
 
-  // Add warranty cost if selected
+  // add warranty cost if selected
   if (warrantyCheckbox && warrantyCheckbox.checked) {
     const qty = parseInt(selectedPackage.dataset.quantity || "1", 10);
     checkoutTotal += qty * 2; // $2 per warranty item
