@@ -28,8 +28,11 @@ const btnPaypal = document.querySelector(".pay-with-paypal");
 const btnCC = document.querySelector(".pay-with-cc");
 
 // initialize warranty from sessionStorage if available
-if (sessionStorage.getItem("warranty_selected") === "true" && warrantyCheckbox) {
-    warrantyCheckbox.checked = true;
+if (
+  sessionStorage.getItem("warranty_selected") === "true" &&
+  warrantyCheckbox
+) {
+  warrantyCheckbox.checked = true;
 }
 
 /**
@@ -71,39 +74,60 @@ const getCampaignData = (data) => {
  */
 
 const updateOrderSummaryWithWarranty = (selected, quantity) => {
-    const warrantySummary = document.querySelector('.warranty-summary');
-    
-    if (!warrantySummary) return;
-    
-    if (selected) {
-        warrantySummary.style.display = 'block';
-        warrantySummary.querySelector('.warranty-quantity').textContent = quantity;
-        warrantySummary.querySelector('.warranty-price').textContent = 
-            campaign.currency.format(quantity * 2); // $2 por warranty
-    } else {
-        warrantySummary.style.display = 'none';
-    }
+  const warrantySummary = document.querySelector(".warranty-summary");
+
+  if (!warrantySummary) return;
+
+  if (selected) {
+    warrantySummary.style.display = "block";
+    warrantySummary.querySelector(".warranty-quantity").textContent = quantity;
+    warrantySummary.querySelector(".warranty-price").textContent =
+      campaign.currency.format(quantity * 2);
+  } else {
+    warrantySummary.style.display = "none";
+  }
 };
 
 const handleWarrantySelection = (selected) => {
-    const selectedOffer = document.querySelector('.offer.selected');
-    const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
-    
-    // atualizar sessionStorage
+  const selectedOffer = document.querySelector(".offer.selected");
+  if (!selectedOffer) {
     if (selected) {
-        sessionStorage.setItem("warranty_selected", "true");
-        sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
-    } else {
-        sessionStorage.removeItem("warranty_selected");
-        sessionStorage.removeItem("warranty_quantity");
+      warrantyCheckbox.checked = false;
+      console.warn("No product selected - warranty disabled");
     }
-    
-    // atualizar UI
-    updateOrderSummaryWithWarranty(selected, mainQuantity);
-    calculateTotal();
+    return;
+  }
+
+  const mainQuantity = parseInt(selectedOffer.dataset.quantity || "1", 10);
+  console.log(
+    `Warranty ${selected ? "added" : "removed"} for quantity: ${mainQuantity}`
+  );
+
+  // atualiza sessionStorage
+  if (selected) {
+    sessionStorage.setItem("warranty_selected", "true");
+    sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
+  } else {
+    sessionStorage.removeItem("warranty_selected");
+    sessionStorage.removeItem("warranty_quantity");
+  }
+
+  finalLineArr = finalLineArr.filter(
+    (item) => item.package_id !== warrantyPackageId
+  );
+  if (selected) {
+    finalLineArr.push({
+      package_id: warrantyPackageId,
+      quantity: mainQuantity,
+      is_upsell: false,
+    });
+  }
+
+  updateOrderSummaryWithWarranty(selected, mainQuantity);
+  calculateTotal();
+
+  console.log("Current Line Items:", JSON.stringify(finalLineArr, null, 2));
 };
-
-
 
 /**
  *  Create Cart / New Prospect
@@ -149,7 +173,8 @@ const createOrder = async () => {
 
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
-  const isBillingSameAsShipping = document.getElementById("same-as-billing").checked;
+  const isBillingSameAsShipping =
+    document.getElementById("same-as-billing").checked;
 
   const orderLineItems = [...finalLineArr];
 
@@ -182,7 +207,7 @@ const createOrder = async () => {
     },
     shipping_method: data.shipping_method,
     success_url: campaign.nextStep(nextURL),
-    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {}
+    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
   };
 
   if (!isBillingSameAsShipping) {
@@ -211,7 +236,8 @@ const createOrder = async () => {
       btnCC.disabled = false;
       btnCC.textContent = btnCC.dataset.text;
 
-      const msg = result.non_field_errors ||
+      const msg =
+        result.non_field_errors ||
         result.postcode ||
         result.shipping_address?.phone_number ||
         Object.values(result)[0];
@@ -254,27 +280,13 @@ const createPayPalOrder = async () => {
 
   btnPaypal.disabled = true;
 
-  const orderLineItems = [...finalLineArr];
-
-  const selectedOffer = document.querySelector(".offer.selected");
-  const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
-
-  // add warranty
-  if (warrantyCheckbox.checked) {
-    orderLineItems.push({
-      package_id: warrantyPackageId,
-      quantity: mainQuantity
-    });
-  }
-
-  // paypal obj
   const orderPPData = {
     user: {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
     },
-    lines: orderLineItems,
+    lines: [...finalLineArr],
     payment_detail: {
       payment_method: data.payment_method,
     },
@@ -300,10 +312,15 @@ const createPayPalOrder = async () => {
 
     sessionStorage.setItem("ref_id", result.ref_id);
 
-    // save warranty info
     if (warrantyCheckbox.checked) {
       sessionStorage.setItem("warranty_selected", "true");
-      sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
+      sessionStorage.setItem(
+        "warranty_quantity",
+        parseInt(
+          document.querySelector(".offer.selected")?.dataset?.quantity || "1",
+          10
+        ).toString()
+      );
     } else {
       sessionStorage.removeItem("warranty_selected");
       sessionStorage.removeItem("warranty_quantity");
@@ -323,9 +340,14 @@ retrieveCampaign();
  */
 const createProspect = () => {
   const email_reg = {
-    first: /(?:[a-z0-9+!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi,
+    first:
+      /(?:[a-z0-9+!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi,
   };
-  if (firstName.value != "" && lastName.value != "" && email_reg.first.test(email.value)) {
+  if (
+    firstName.value != "" &&
+    lastName.value != "" &&
+    email_reg.first.test(email.value)
+  ) {
     sendProspect();
   }
 };
@@ -384,7 +406,9 @@ const renderPackages = () => {
     let priceTotalElement = item.querySelector(".price-total");
 
     priceElement.textContent = campaign.currency.format(package.price);
-    priceTotalElement.textContent = campaign.currency.format(package.priceTotal);
+    priceTotalElement.textContent = campaign.currency.format(
+      package.priceTotal
+    );
 
     if (package.shippingPrice != 0) {
       item.querySelector(".shipping-cost").textContent = package.shippingPrice;
@@ -401,21 +425,27 @@ const renderPackages = () => {
  * Calculate totals
  */
 const calculateTotal = () => {
-  let selectedPackage = document.querySelector(".offer.selected");
-  if (!selectedPackage) return;
-
-  let packagePrice = parseFloat(selectedPackage.dataset.priceTotal);
-  let shippingPrice = parseFloat(selectedPackage.dataset.priceShipping);
-  let checkoutTotal = packagePrice + shippingPrice;
-
-  // add warranty cost if selected
-  if (warrantyCheckbox && warrantyCheckbox.checked) {
-    const qty = parseInt(selectedPackage.dataset.quantity || "1", 10);
-    checkoutTotal += qty * 2; // $2 per warranty item
+  const selectedPackage = document.querySelector(".offer.selected");
+  if (!selectedPackage) {
+    console.error("No package selected - resetting to default");
+    return;
   }
 
-  document.querySelector(".order-summary-total-value").textContent = 
-    campaign.currency.format(checkoutTotal);
+  const packagePrice = parseFloat(selectedPackage.dataset.priceTotal) || 0;
+  const shippingPrice = parseFloat(selectedPackage.dataset.priceShipping) || 0;
+  let checkoutTotal = packagePrice + shippingPrice;
+
+  if (warrantyCheckbox?.checked) {
+    const qty = parseInt(selectedPackage.dataset.quantity || "1", 10);
+    checkoutTotal += qty * 2;
+    console.log(`Warranty added: ${qty} x $2.00`);
+  }
+
+  const totalElement = document.querySelector(".order-summary-total-value");
+  if (totalElement) {
+    totalElement.textContent = campaign.currency.format(checkoutTotal);
+    console.log("New Total:", totalElement.textContent);
+  }
 };
 
 //
@@ -424,76 +454,105 @@ const calculateTotal = () => {
 document.addEventListener("DOMContentLoaded", function (event) {
   renderPackages();
 
-  let firstLineItem = {
-    package_id: selectedOfferId,
-    quantity: 1,
-    is_upsell: false,
-  };
-
-  finalLineArr.push(firstLineItem);
-
-  const summaryShipPrice = document.querySelector(".selected-shipping-price");
   const $offer = document.querySelectorAll(".offer");
+  const summaryShipPrice = document.querySelector(".selected-shipping-price");
+
+  let offerExists = false;
+  for (const offer of $offer) {
+    if (offer.dataset.packageId === selectedOfferId) {
+      offerExists = true;
+      break;
+    }
+  }
+
+  let firstLineItem;
+  if (!offerExists && $offer.length > 0) {
+    selectedOfferId = $offer[0].dataset.packageId;
+    $offer[0].classList.add("selected");
+    firstLineItem = {
+      package_id: selectedOfferId,
+      quantity: 1,
+      is_upsell: false,
+    };
+  } else {
+    firstLineItem = {
+      package_id: selectedOfferId,
+      quantity: 1,
+      is_upsell: false,
+    };
+  }
+
+  finalLineArr = [firstLineItem];
 
   if ($offer) {
-    $offer.forEach(function (el, key) {
+    $offer.forEach(function (el) {
       el.addEventListener("click", function () {
-        el.classList.toggle("selected");
-
-        let pid = el.dataset.packageId;
-        let pName = el.dataset.name;
-        let pPriceEach = el.dataset.priceEach;
-        let pPriceShipping = el.dataset.priceShipping;
-        let shippingMethod = el.dataset.shippingMethod;
-        let pQuantity = el.dataset.quantity;
-
-        document.getElementById("shipping_method").value = shippingMethod;
-        document.querySelector(".selected-product-name").textContent = pName;
-        document.querySelector(".selected-product-price").textContent =
-          campaign.currency.format(pPriceEach);
-
-        if (pPriceShipping != 0.0) {
-          summaryShipPrice.textContent = campaign.currency.format(pPriceShipping);
-        } else {
-          summaryShipPrice.textContent = "FREE";
-        }
-
-        $offer.forEach(function (ell, els) {
-          if (key !== els) {
-            ell.classList.remove("selected");
-          }
+        // reset
+        $offer.forEach((o) => {
+          o.classList.remove("selected");
+          o.style.border = "none";
         });
 
-        firstLineItem.package_id = pid;
-        console.log("Change Line Items:", finalLineArr);
-        calculateTotal();
+        el.classList.add("selected");
+        el.style.border = "2px solid #4CAF50";
+
+        firstLineItem.package_id = el.dataset.packageId;
+        document.getElementById("shipping_method").value =
+          el.dataset.shippingMethod;
+
+        // UI updates
+        const priceElements = {
+          name: ".selected-product-name",
+          price: ".selected-product-price",
+          shipping: ".selected-shipping-price",
+        };
+
+        for (const [key, selector] of Object.entries(priceElements)) {
+          const element = document.querySelector(selector);
+          if (element) {
+            element.textContent =
+              key === "shipping"
+                ? el.dataset.priceShipping != 0.0
+                  ? campaign.currency.format(el.dataset.priceShipping)
+                  : "FREE"
+                : key === "price"
+                ? campaign.currency.format(el.dataset.priceEach)
+                : el.dataset.name;
+          }
+        }
+
+        // force warranty udate
+        if (warrantyCheckbox?.checked) {
+          handleWarrantySelection(true);
+        } else {
+          calculateTotal(); // recalc if no warrany
+        }
+
+        console.log(
+          `Selected: ${el.dataset.name} (Qty: ${el.dataset.quantity})`
+        );
       });
     });
   }
 
-  // initial package setup
   for (const offer of $offer) {
-    packageId = offer.dataset.packageId;
-    shippingId = offer.dataset.shippingMethod;
-    if (packageId === selectedOfferId) {
+    if (offer.dataset.packageId === selectedOfferId) {
       offer.classList.add("selected");
       offer.style.order = "-1";
-      document.getElementById("shipping_method").value = shippingId;
+      document.getElementById("shipping_method").value =
+        offer.dataset.shippingMethod;
       document.querySelector(".selected-product-name").textContent =
         offer.dataset.name;
       document.querySelector(".selected-product-price").textContent =
         campaign.currency.format(offer.dataset.priceEach);
-      if (offer.dataset.priceShipping != 0.0) {
-        summaryShipPrice.textContent = campaign.currency.format(
-          offer.dataset.priceShipping
-        );
-      } else {
-        summaryShipPrice.textContent = "FREE";
-      }
+      document.querySelector(".selected-shipping-price").textContent =
+        offer.dataset.priceShipping != 0.0
+          ? campaign.currency.format(offer.dataset.priceShipping)
+          : "FREE";
+      break;
     }
   }
 
-  // billing address toggle
   const billingToggle = document.getElementById("same-as-billing");
   const billingSection = document.getElementById("billing-address-form");
 
@@ -502,7 +561,6 @@ document.addEventListener("DOMContentLoaded", function (event) {
       const isSameAddress = this.checked;
       document.getElementById("billing_same_as_shipping_address").value =
         isSameAddress;
-
       billingSection.style.display = isSameAddress ? "none" : "block";
 
       const billingInputs = billingSection.querySelectorAll("input, select");
@@ -511,25 +569,35 @@ document.addEventListener("DOMContentLoaded", function (event) {
       });
 
       if (isSameAddress) {
-        const billingErrors = billingSection.querySelectorAll(".invalid-message");
+        const billingErrors =
+          billingSection.querySelectorAll(".invalid-message");
         billingErrors.forEach((el) => (el.textContent = ""));
       }
     });
   }
 
-  // garantua checkbox event listener
   if (warrantyCheckbox) {
-    warrantyCheckbox.addEventListener('change', function(e) {
-        handleWarrantySelection(e.target.checked);
+    warrantyCheckbox.addEventListener("change", function (e) {
+      const selectedOffer = document.querySelector(".offer.selected");
+      if (!selectedOffer && e.target.checked) {
+        e.target.checked = false;
+        alert("Please select a main product first");
+        return;
+      }
+      handleWarrantySelection(e.target.checked);
     });
-    
-    // initialize if already checked
+
     if (warrantyCheckbox.checked) {
+      const selectedOffer = document.querySelector(".offer.selected");
+      if (selectedOffer) {
         handleWarrantySelection(true);
+      } else {
+        warrantyCheckbox.checked = false;
+      }
     }
   }
 
-  console.log("Default Line Items:", finalLineArr);
+  console.log("Initial line items:", JSON.stringify(finalLineArr, null, 2));
   calculateTotal();
 });
 
