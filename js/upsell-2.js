@@ -1,103 +1,96 @@
-const btnUpsell = document.querySelector('.btn-success');
-const quantitySelect = document.getElementById('quantity');
+const btnUpsell = document.querySelector(".btn-success");
+const quantitySelect = document.getElementById("quantity");
 const basePrice = 10;
 const packageId = 8;
+const warrantyPackageId = 7;
 
-/**
- * Get Order Details for Upsell page
- */
 const getOrder = async () => {
-    console.log("get order");
-    try {
-        const response = await fetch(`${ordersURL}${refId}/`, {
-            method: 'GET',
-            headers,
-        });
-        const result = await response.json();
+  try {
+    const response = await fetch(`${ordersURL}${refId}/`, {
+      method: "GET",
+      headers,
+    });
+    const result = await response.json();
 
-        if (!response.ok) {
-            console.log('Something went wrong');
-            return;
-        }
-
-        if (result.supports_post_purchase_upsells === false) {
-            window.location.href = campaign.skipSteps(confirmationURL);
-        }
-
-        console.log(result);
-    } catch (error) {
-        console.log(error);
+    if (!response.ok || result.supports_post_purchase_upsells === false) {
+      window.location.href = campaign.skipSteps(confirmationURL);
     }
+  } catch (error) {
+    console.error("Get order error:", error);
+  }
 };
 
 const retrieveOrder = campaign.once(getOrder);
 
-/**
- * Create Upsell
- */
 const createUpsell = async () => {
-    console.log("create upsell");
+  if (!btnUpsell || btnUpsell.disabled) return;
 
-    const quantity = parseInt(quantitySelect.value || "1", 10);
+  const quantity = parseInt(quantitySelect.value || "1", 10);
+  const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
+  const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
 
-    // warranty data
-    const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
-    const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
+  btnUpsell.disabled = true;
+  btnUpsell.textContent = btnUpsell.dataset.loadingText;
 
-    // items array
-    const upsellLineItems = [
-        {
-            package_id: packageId,
-            quantity: quantity
-        },
-        ...(warrantySelected ? [{
-            package_id: 7, // Garantia
-            quantity: warrantyQuantity
-        }] : [])
-    ];
+  try {
+    const lineItems = [{ package_id: packageId, quantity }];
 
-    btnUpsell.disabled = true;
-    btnUpsell.textContent = btnUpsell.dataset.loadingText;
-
-    try {
-        const response = await fetch(`${ordersURL}${refId}/upsells/`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ lines: upsellLineItems }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            console.log('Something went wrong');
-            btnUpsell.disabled = false;
-            btnUpsell.textContent = btnUpsell.dataset.text;
-            return;
-        }
-
-        console.log(result);
-        location.href = campaign.nextStep(nextURL);
-    } catch (error) {
-        console.log(error);
+    if (warrantySelected) {
+      const alreadyHasWarranty = lineItems.some(item => item.package_id === warrantyPackageId);
+      if (!alreadyHasWarranty) {
+        lineItems.push({ package_id: warrantyPackageId, quantity: warrantyQuantity });
+      }
     }
+
+    const orderData = {
+      lines: lineItems,
+      metadata: warrantySelected ? { "Extended Warranty": true } : {}
+    };
+
+    const response = await fetch(`${ordersURL}${refId}/upsells/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(orderData),
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Failed to add upsell");
+
+    location.href = campaign.nextStep(nextURL);
+  } catch (error) {
+    console.error("Upsell error:", error);
+    btnUpsell.disabled = false;
+    btnUpsell.textContent = btnUpsell.dataset.text;
+
+    const errorBlock = document.getElementById("upsell-error-block");
+    if (errorBlock) {
+      errorBlock.innerHTML = `
+        <div class="alert alert-danger">
+          ${error.message || "Failed to process upsell. Please try again."}
+        </div>
+      `;
+    }
+  }
 };
 
-document.addEventListener("DOMContentLoaded", function () {
-    retrieveOrder();
+document.addEventListener("DOMContentLoaded", () => {
+  retrieveOrder();
+  const sendUpsell = campaign.once(createUpsell);
 
-    const sendUpsell = campaign.once(createUpsell);
+  if (btnUpsell) {
+    btnUpsell.addEventListener("click", sendUpsell);
+  }
 
-    btnUpsell.addEventListener('click', () => {
-        sendUpsell();
+  document.querySelectorAll(".upsell-no").forEach(anchor => {
+    anchor.href = campaign.nextStep(nextURL);
+  });
+
+  if (quantitySelect) {
+    quantitySelect.addEventListener("change", () => {
+      const qty = parseInt(quantitySelect.value || "1", 10);
+      document.getElementById("total-price").textContent = (qty * basePrice).toFixed(2);
     });
 
-    [...document.getElementsByClassName('upsell-no')].forEach(anchor => {
-        anchor.href = campaign.nextStep(nextURL);
-    });
-
-    quantitySelect.addEventListener('change', () => {
-        const qty = parseInt(quantitySelect.value || "1", 10);
-        const total = (qty * basePrice).toFixed(2);
-        document.getElementById('total-price').textContent = total;
-    });
+    quantitySelect.dispatchEvent(new Event("change"));
+  }
 });

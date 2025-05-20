@@ -3,7 +3,7 @@
 //
 let finalLineArr = [];
 const warrantyCheckbox = document.getElementById("addWarranty");
-const warrantyPackageId = 7;
+const warrantyPackageId = offers.warrantyPackageId || 7;
 
 // form
 const formEl = document.querySelector(".form");
@@ -27,7 +27,7 @@ const validErrBlock = document.getElementById("validation-error-block");
 const btnPaypal = document.querySelector(".pay-with-paypal");
 const btnCC = document.querySelector(".pay-with-cc");
 
-// Initialize warranty from sessionStorage if available
+// initialize warranty from sessionStorage if available
 if (sessionStorage.getItem("warranty_selected") === "true" && warrantyCheckbox) {
     warrantyCheckbox.checked = true;
 }
@@ -69,35 +69,41 @@ const getCampaignData = (data) => {
 /**
  * Warranty Selection Handler
  */
+
+const updateOrderSummaryWithWarranty = (selected, quantity) => {
+    const warrantySummary = document.querySelector('.warranty-summary');
+    
+    if (!warrantySummary) return;
+    
+    if (selected) {
+        warrantySummary.style.display = 'block';
+        warrantySummary.querySelector('.warranty-quantity').textContent = quantity;
+        warrantySummary.querySelector('.warranty-price').textContent = 
+            campaign.currency.format(quantity * 2); // $2 por warranty
+    } else {
+        warrantySummary.style.display = 'none';
+    }
+};
+
 const handleWarrantySelection = (selected) => {
     const selectedOffer = document.querySelector('.offer.selected');
     const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
     
-    // update sessionStorage
+    // atualizar sessionStorage
     if (selected) {
         sessionStorage.setItem("warranty_selected", "true");
         sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
-        
-        // add warranty to finalLineArr
-        if (!finalLineArr.some(item => item.package_id === warrantyPackageId)) {
-            finalLineArr.push({
-                package_id: warrantyPackageId,
-                quantity: mainQuantity,
-                is_upsell: false
-            });
-        }
     } else {
         sessionStorage.removeItem("warranty_selected");
         sessionStorage.removeItem("warranty_quantity");
-        
-        // remove warranty from finalLineArr
-        finalLineArr = finalLineArr.filter(item => item.package_id !== warrantyPackageId);
     }
     
-    // Update UI
+    // atualizar UI
+    updateOrderSummaryWithWarranty(selected, mainQuantity);
     calculateTotal();
-    console.log("Updated line items:", finalLineArr);
 };
+
+
 
 /**
  *  Create Cart / New Prospect
@@ -150,13 +156,6 @@ const createOrder = async () => {
   const selectedOffer = document.querySelector(".offer.selected");
   const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
 
-  if (warrantyCheckbox.checked) {
-    orderLineItems.push({
-      package_id: warrantyPackageId,
-      quantity: mainQuantity,
-    });
-  }
-
   const orderData = {
     user: {
       first_name: data.first_name,
@@ -182,8 +181,8 @@ const createOrder = async () => {
       country: data.shipping_country,
     },
     shipping_method: data.shipping_method,
-    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
     success_url: campaign.nextStep(nextURL),
+    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {}
   };
 
   if (!isBillingSameAsShipping) {
@@ -494,7 +493,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 
-  // Billing address toggle
+  // billing address toggle
   const billingToggle = document.getElementById("same-as-billing");
   const billingSection = document.getElementById("billing-address-form");
 
@@ -518,13 +517,13 @@ document.addEventListener("DOMContentLoaded", function (event) {
     });
   }
 
-  // Warranty checkbox event listener
+  // garantua checkbox event listener
   if (warrantyCheckbox) {
     warrantyCheckbox.addEventListener('change', function(e) {
         handleWarrantySelection(e.target.checked);
     });
     
-    // Initialize if already checked
+    // initialize if already checked
     if (warrantyCheckbox.checked) {
         handleWarrantySelection(true);
     }
