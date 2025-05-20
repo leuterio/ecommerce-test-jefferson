@@ -35,6 +35,13 @@ const retrieveOrder = campaign.once(getOrder);
 /**
  * Create Upsell
 */
+
+function goTo(path) {
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const basePath = isGitHubPages ? `/${window.location.pathname.split('/')[1]}` : '';
+  window.location.href = `${basePath}${path}`;
+}
+
 const createUpsell = async () => {
     console.log ("create upsell");
     const orderData = {    
@@ -59,7 +66,7 @@ const createUpsell = async () => {
             return;
         } 
         console.log(result);
-        location.href = location.href = "/upsell-2.html";
+        goTo('/upsell-2.html');
 
     } catch (error) {
         console.log(error);
@@ -79,6 +86,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     btnUpsell.addEventListener('click', clickHandler);
     
     [...document.getElementsByClassName('upsell-no')].forEach(anchor => {
-        anchor.href = "/upsell-2.html";
+    anchor.addEventListener('click', (e) => {
+        e.preventDefault();
+        goTo('/upsell-2.html');
+    });
     });
 });
