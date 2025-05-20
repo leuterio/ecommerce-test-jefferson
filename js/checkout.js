@@ -1,7 +1,9 @@
 //
 // Variables
 //
-let lineArr = [];
+let finalLineArr = [];
+const warrantyCheckbox = document.getElementById("addWarranty");
+const warrantyPackageId = 7;
 
 // form
 const formEl = document.querySelector(".form");
@@ -78,7 +80,7 @@ const createCart = async () => {
       last_name: data.last_name,
       email: data.email,
     },
-    lines: lineArr,
+    lines: finalLineArr,
   };
 
   try {
@@ -104,11 +106,23 @@ const createCart = async () => {
 
 const createOrder = async () => {
   console.log("create order");
+
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
-
   const isBillingSameAsShipping =
     document.getElementById("same-as-billing").checked;
+
+  const orderLineItems = [...finalLineArr];
+
+  const selectedOffer = document.querySelector(".offer.selected");
+  const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
+
+  if (warrantyCheckbox.checked) {
+    orderLineItems.push({
+      package_id: warrantyPackageId,
+      quantity: mainQuantity,
+    });
+  }
 
   const orderData = {
     user: {
@@ -116,7 +130,7 @@ const createOrder = async () => {
       last_name: data.last_name,
       email: data.email,
     },
-    lines: lineArr,
+    lines: orderLineItems,
     use_default_shipping_address: false,
     use_default_billing_address: false,
     billing_same_as_shipping_address: isBillingSameAsShipping,
@@ -135,10 +149,10 @@ const createOrder = async () => {
       country: data.shipping_country,
     },
     shipping_method: data.shipping_method,
+    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
     success_url: campaign.nextStep(nextURL),
   };
 
-  // Add billing address if necessary
   if (!isBillingSameAsShipping) {
     orderData.billing_address = {
       first_name: data.billing_first_name,
@@ -161,62 +175,29 @@ const createOrder = async () => {
     });
     const result = await response.json();
 
-    if (!response.ok && result.non_field_errors) {
+    if (!response.ok) {
       btnCC.disabled = false;
       btnCC.textContent = btnCC.dataset.text;
 
-      console.log("Something went wrong", result);
-      let error = result.non_field_errors;
+      const msg =
+        result.non_field_errors ||
+        result.postcode ||
+        result.shipping_address?.phone_number ||
+        Object.values(result)[0];
       validErrBlock.innerHTML = `
-                <div class="alert alert-danger">
-                    ${error}
-                </div>
-            `;
-      return;
-    } else if (!response.ok && result.postcode) {
-      btnCC.disabled = false;
-      btnCC.textContent = btnCC.dataset.text;
-
-      console.log("ZIP is incorrect", result);
-      let error = result.postcode;
-      validErrBlock.innerHTML = `
-                <div class="alert alert-danger">
-                    API Response Error: ${error}
-                </div>
-            `;
-      return;
-    } else if (!response.ok && result.shipping_address) {
-      btnCC.disabled = false;
-      btnCC.textContent = btnCC.dataset.text;
-
-      console.log("Phone number is not accepted", result);
-      let error = result.shipping_address.phone_number;
-      validErrBlock.innerHTML = `
-                <div class="alert alert-danger">
-                    API Response Error: ${error}
-                </div>
-            `;
-      return;
-    } else if (!response.ok) {
-      btnCC.disabled = false;
-      btnCC.textContent = btnCC.dataset.text;
-
-      console.log("Something went wrong", result);
-      let error = Object.values(result)[0];
-      document.getElementById("payment-error-block").innerHTML = `
-                <div class="alert alert-danger">
-                    ${error}
-                </div>
-            `;
+        <div class="alert alert-danger">
+            ${msg}
+        </div>
+      `;
       return;
     }
 
     sessionStorage.setItem("ref_id", result.ref_id);
 
-    if (!result.payment_complete_url && result.number) {
-      location.href = campaign.nextStep(nextURL);
-    } else if (result.payment_complete_url) {
+    if (result.payment_complete_url) {
       window.location.href = result.payment_complete_url;
+    } else {
+      location.href = campaign.nextStep(nextURL);
     }
   } catch (error) {
     console.log(error);
@@ -238,7 +219,7 @@ const createPayPalOrder = async () => {
       last_name: data.last_name,
       email: data.email,
     },
-    lines: lineArr,
+    lines: finalLineArr,
     payment_detail: {
       payment_method: data.payment_method,
     },
@@ -383,6 +364,14 @@ const calculateTotal = () => {
 
   packagePrice = selectedPackage.dataset.priceTotal;
 
+  const warrantyIsChecked = warrantyCheckbox && warrantyCheckbox.checked;
+  if (warrantyIsChecked) {
+    const qty = parseInt(
+      document.querySelector(".offer.selected")?.dataset?.quantity || 1
+    );
+    checkoutTotal += qty * 2; // $2 por item de garantia
+  }
+
   let checkoutTotal = parseFloat(packagePrice) + parseFloat(shippingPrice);
 
   let orderTotal = document.querySelector(".order-summary-total-value");
@@ -403,7 +392,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     is_upsell: false,
   };
 
-  lineArr.push(firstLineItem);
+  finalLineArr.push(firstLineItem);
 
   const summaryShipPrice = document.querySelector(".selected-shipping-price");
 
@@ -447,7 +436,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
 
         firstLineItem.package_id = pid;
 
-        console.log("Change Line Items:", lineArr);
+        console.log("Change Line Items:", finalLineArr);
 
         calculateTotal();
       });
@@ -501,7 +490,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     });
   }
 
-  console.log("Default Line Items:", lineArr);
+  console.log("Default Line Items:", finalLineArr);
   calculateTotal();
 });
 
