@@ -28,29 +28,14 @@ function goTo(path) {
 const createUpsell = async () => {
   if (!btnUpsell || btnUpsell.disabled) return;
 
-  const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
-  const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
-
   btnUpsell.disabled = true;
   btnUpsell.textContent = btnUpsell.dataset.loadingText;
 
   try {
-    const lineItems = Array.isArray(upsellLineItem) ? [...upsellLineItem] : [];
-
-    // Garantir que a garantia não seja adicionada mais de uma vez
-    const alreadyHasWarranty = lineItems.some(item => item.package_id === warrantyPackageId);
-    if (warrantySelected && !alreadyHasWarranty) {
-      lineItems.push({ package_id: warrantyPackageId, quantity: warrantyQuantity });
-    }
-
     const orderData = {
-      lines: lineItems,
+      lines: Array.isArray(upsellLineItem) ? [...upsellLineItem] : [],
       metadata: {}
     };
-
-    if (warrantySelected) {
-      orderData.metadata["Extended Warranty"] = true;
-    }
 
     const response = await fetch(`${ordersURL}${refId}/upsells/`, {
       method: "POST",
@@ -66,7 +51,7 @@ const createUpsell = async () => {
     console.error("Upsell error:", error);
     btnUpsell.disabled = false;
     btnUpsell.textContent = btnUpsell.dataset.text;
-
+    
     const errorBlock = document.getElementById("upsell-error-block");
     if (errorBlock) {
       errorBlock.innerHTML = `

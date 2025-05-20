@@ -88,45 +88,88 @@ const updateOrderSummaryWithWarranty = (selected, quantity) => {
   }
 };
 
+const updateOrderSummary = () => {
+  const summaryContainer = document.querySelector('.order-summary-items');
+  if (!summaryContainer) return;
+
+  summaryContainer.innerHTML = '';
+
+  const mainProduct = finalLineArr.find(item => !item.is_upsell && item.package_id !== warrantyPackageId);
+  if (mainProduct) {
+    const offer = document.querySelector(`.offer[data-package-id="${mainProduct.package_id}"]`);
+    if (offer) {
+      const productElement = document.createElement('div');
+      productElement.className = 'order-summary-item';
+      productElement.innerHTML = `
+        <div class="d-flex justify-content-between">
+          <span>${offer.dataset.name}</span>
+          <span>${mainProduct.quantity}</span>
+          <span>${campaign.currency.format(offer.dataset.priceEach * mainProduct.quantity)}</span>
+        </div>
+      `;
+      summaryContainer.appendChild(productElement);
+    }
+  }
+
+  // add warrant
+  const warrantyItem = finalLineArr.find(item => item.package_id === warrantyPackageId);
+  if (warrantyItem) {
+    const warrantyElement = document.createElement('div');
+    warrantyElement.className = 'order-summary-item warranty-item';
+    warrantyElement.innerHTML = `
+      <div class="d-flex justify-content-between">
+        <span>Warranty - 1 Year</span>
+        <span>${warrantyItem.quantity}</span>
+        <span>${campaign.currency.format(warrantyItem.quantity * 2)}</span>
+      </div>
+    `;
+    summaryContainer.appendChild(warrantyElement);
+  }
+
+  // add upsells if
+  finalLineArr.filter(item => item.is_upsell).forEach(upsell => {
+    const upsellElement = document.createElement('div');
+    upsellElement.className = 'order-summary-item upsell-item';
+    upsellElement.innerHTML = `
+      <div class="d-flex justify-content-between">
+        <span>${upsell.name || 'Upsell Product'}</span>
+        <span>${upsell.quantity}</span>
+        <span>${campaign.currency.format(upsell.price * upsell.quantity)}</span>
+      </div>
+    `;
+    summaryContainer.appendChild(upsellElement);
+  });
+
+  calculateTotal();
+};
+
 const handleWarrantySelection = (selected) => {
   const selectedOffer = document.querySelector(".offer.selected");
   if (!selectedOffer) {
-    if (selected) {
-      warrantyCheckbox.checked = false;
-      console.warn("No product selected - warranty disabled");
-    }
+    if (selected) warrantyCheckbox.checked = false;
     return;
   }
 
   const mainQuantity = parseInt(selectedOffer.dataset.quantity || "1", 10);
-  console.log(
-    `Warranty ${selected ? "added" : "removed"} for quantity: ${mainQuantity}`
-  );
 
-  // atualiza sessionStorage
+  const warrantyIndex = finalLineArr.findIndex(item => item.package_id === warrantyPackageId);
+  
   if (selected) {
-    sessionStorage.setItem("warranty_selected", "true");
-    sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
-  } else {
-    sessionStorage.removeItem("warranty_selected");
-    sessionStorage.removeItem("warranty_quantity");
+    if (warrantyIndex >= 0) {
+      finalLineArr[warrantyIndex].quantity = mainQuantity;
+    } else {
+      finalLineArr.push({
+        package_id: warrantyPackageId,
+        quantity: mainQuantity,
+        is_upsell: false
+      });
+    }
+  } else if (warrantyIndex >= 0) {
+    finalLineArr.splice(warrantyIndex, 1);
   }
 
-  finalLineArr = finalLineArr.filter(
-    (item) => item.package_id !== warrantyPackageId
-  );
-  if (selected) {
-    finalLineArr.push({
-      package_id: warrantyPackageId,
-      quantity: mainQuantity,
-      is_upsell: false,
-    });
-  }
-
-  updateOrderSummaryWithWarranty(selected, mainQuantity);
+  updateOrderSummary();
   calculateTotal();
-
-  console.log("Current Line Items:", JSON.stringify(finalLineArr, null, 2));
 };
 
 /**

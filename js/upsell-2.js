@@ -26,25 +26,15 @@ const createUpsell = async () => {
   if (!btnUpsell || btnUpsell.disabled) return;
 
   const quantity = parseInt(quantitySelect.value || "1", 10);
-  const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
-  const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
-
+  
   btnUpsell.disabled = true;
   btnUpsell.textContent = btnUpsell.dataset.loadingText;
 
   try {
-    const lineItems = [{ package_id: packageId, quantity }];
-
-    if (warrantySelected) {
-      const alreadyHasWarranty = lineItems.some(item => item.package_id === warrantyPackageId);
-      if (!alreadyHasWarranty) {
-        lineItems.push({ package_id: warrantyPackageId, quantity: warrantyQuantity });
-      }
-    }
-
+    // add upsell atual, sem warranty
     const orderData = {
-      lines: lineItems,
-      metadata: warrantySelected ? { "Extended Warranty": true } : {}
+      lines: [{ package_id: packageId, quantity }],
+      metadata: {}
     };
 
     const response = await fetch(`${ordersURL}${refId}/upsells/`, {
