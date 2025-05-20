@@ -43,9 +43,18 @@ function goTo(path) {
 }
 
 const createUpsell = async () => {
-    console.log ("create upsell");
+    console.log("create upsell");
+    const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
+    const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
+
     const orderData = {    
-      "lines": upsellLineItem
+        "lines": [
+            ...upsellLineItem,
+            ...(warrantySelected ? [{
+                package_id: 7, // ID da garantia
+                quantity: warrantyQuantity
+            }] : [])
+        ]
     }
 
     btnUpsell.disabled = true;

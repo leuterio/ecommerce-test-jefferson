@@ -168,6 +168,9 @@ function show(order) {
     orderSubTotal.textContent = campaign.currency.format(subTotal);
 
     const orderRefernce = document.querySelector(".order-reference");
-    orderRefernce.textContent = orderRef
+    orderRefernce.textContent = orderRef;
+
+    sessionStorage.removeItem("warranty_selected");
+    sessionStorage.removeItem("warranty_quantity");
 
 }

@@ -27,10 +27,14 @@ const validErrBlock = document.getElementById("validation-error-block");
 const btnPaypal = document.querySelector(".pay-with-paypal");
 const btnCC = document.querySelector(".pay-with-cc");
 
+// Initialize warranty from sessionStorage if available
+if (sessionStorage.getItem("warranty_selected") === "true" && warrantyCheckbox) {
+    warrantyCheckbox.checked = true;
+}
+
 /**
  *  Get Campaign
  */
-
 const getCampaign = async () => {
   console.log("get campaign");
   try {
@@ -46,7 +50,6 @@ const getCampaign = async () => {
     }
 
     console.log(data);
-
     getCampaignData(data);
   } catch (error) {
     console.log(error);
@@ -64,9 +67,41 @@ const getCampaignData = (data) => {
 };
 
 /**
+ * Warranty Selection Handler
+ */
+const handleWarrantySelection = (selected) => {
+    const selectedOffer = document.querySelector('.offer.selected');
+    const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
+    
+    // Update sessionStorage
+    if (selected) {
+        sessionStorage.setItem("warranty_selected", "true");
+        sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
+        
+        // Add warranty to finalLineArr if not already present
+        if (!finalLineArr.some(item => item.package_id === warrantyPackageId)) {
+            finalLineArr.push({
+                package_id: warrantyPackageId,
+                quantity: mainQuantity,
+                is_upsell: false
+            });
+        }
+    } else {
+        sessionStorage.removeItem("warranty_selected");
+        sessionStorage.removeItem("warranty_quantity");
+        
+        // Remove warranty from finalLineArr
+        finalLineArr = finalLineArr.filter(item => item.package_id !== warrantyPackageId);
+    }
+    
+    // Update UI
+    calculateTotal();
+    console.log("Updated line items:", finalLineArr);
+};
+
+/**
  *  Create Cart / New Prospect
  */
-
 const createCart = async () => {
   console.log("create prospect");
   const formData = new FormData(formEl);
@@ -103,14 +138,12 @@ const createCart = async () => {
 /**
  * Use Create Order with Credit Card
  */
-
 const createOrder = async () => {
   console.log("create order");
 
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
-  const isBillingSameAsShipping =
-    document.getElementById("same-as-billing").checked;
+  const isBillingSameAsShipping = document.getElementById("same-as-billing").checked;
 
   const orderLineItems = [...finalLineArr];
 
@@ -179,8 +212,7 @@ const createOrder = async () => {
       btnCC.disabled = false;
       btnCC.textContent = btnCC.dataset.text;
 
-      const msg =
-        result.non_field_errors ||
+      const msg = result.non_field_errors ||
         result.postcode ||
         result.shipping_address?.phone_number ||
         Object.values(result)[0];
@@ -193,6 +225,14 @@ const createOrder = async () => {
     }
 
     sessionStorage.setItem("ref_id", result.ref_id);
+
+    if (warrantyCheckbox.checked) {
+      sessionStorage.setItem("warranty_selected", "true");
+      sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
+    } else {
+      sessionStorage.removeItem("warranty_selected");
+      sessionStorage.removeItem("warranty_quantity");
+    }
 
     if (result.payment_complete_url) {
       window.location.href = result.payment_complete_url;
@@ -207,24 +247,41 @@ const createOrder = async () => {
 /**
  * Use Create Order with PayPal
  */
-
 const createPayPalOrder = async () => {
-  console.log("create order paypal order");
+  console.log("create order paypal");
+
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
+
   btnPaypal.disabled = true;
+
+  const orderLineItems = [...finalLineArr];
+
+  const selectedOffer = document.querySelector(".offer.selected");
+  const mainQuantity = parseInt(selectedOffer?.dataset?.quantity || "1", 10);
+
+  // add warranty
+  if (warrantyCheckbox.checked) {
+    orderLineItems.push({
+      package_id: warrantyPackageId,
+      quantity: mainQuantity
+    });
+  }
+
+  // paypal obj
   const orderPPData = {
     user: {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
     },
-    lines: finalLineArr,
+    lines: orderLineItems,
     payment_detail: {
       payment_method: data.payment_method,
     },
     shipping_method: data.shipping_method,
     success_url: campaign.nextStep(nextURL),
+    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
   };
 
   try {
@@ -242,33 +299,34 @@ const createPayPalOrder = async () => {
       return;
     }
 
-    console.log(result);
-
     sessionStorage.setItem("ref_id", result.ref_id);
+
+    // save warranty info
+    if (warrantyCheckbox.checked) {
+      sessionStorage.setItem("warranty_selected", "true");
+      sessionStorage.setItem("warranty_quantity", mainQuantity.toString());
+    } else {
+      sessionStorage.removeItem("warranty_selected");
+      sessionStorage.removeItem("warranty_quantity");
+    }
 
     window.location.href = result.payment_complete_url;
   } catch (error) {
     console.log(error);
   }
 };
-const retrieveCampaign = campaign.once(getCampaign);
 
+const retrieveCampaign = campaign.once(getCampaign);
 retrieveCampaign();
 
 /**
  * Use Create Create cart to capture prospect if email, first, and last names are valid
  */
-
 const createProspect = () => {
   const email_reg = {
-    first:
-      /(?:[a-z0-9+!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi,
+    first: /(?:[a-z0-9+!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi,
   };
-  if (
-    firstName.value != "" &&
-    lastName.value != "" &&
-    email_reg.first.test(email.value)
-  ) {
+  if (firstName.value != "" && lastName.value != "" && email_reg.first.test(email.value)) {
     sendProspect();
   }
 };
@@ -277,40 +335,33 @@ const sendProspect = campaign.once(createCart);
 /**
  * Create Packages
  */
-
 const renderPackages = () => {
   const template = `
-                    <div class="offer-header d-flex justify-content-between align-items-center border-bottom">
-                        <div class="offer-title d-flex align-items-center px-3">
-                            <span class="offer-title-text fs-5  text-nowrap"></span>
-                        </div>
-                        <div class="px-3 py-3 text-nowrap fs-7 fw-bold">
-                            <span class="shipping-cost"></span> SHIPPING
-                        </div>
-                    </div>
-                    <div class="offer-content d-flex align-items-center ps-4 py-2">
-                        <div class="offer-content-img">
-                            <img src="" class="img-fluid p-image">
-                        </div>
-                        <div class="offer-content-info pe-2 ms-3">
-                            <div class="offer-content-price-each  text-primary">
-                                <span class="price-each h4 fw-bold"></span>
-                                <span class="fs-8 fw-light">/each</span>
-                            </div>
-                            <div class="offer-content-price-orig text-secondary">
-                                <s> 
-                                Orig
-                                    <span class="price-each-retail"></span>
-                                </s>
-                            </div>
-                            <div class="offer-content-price-total h6 fw-bold text-success">
-                                Total:
-                                <span class="price-total"></span>
-                            </div>
-                        </div>
-                       
-                    </div>
-                    `;
+    <div class="offer-header d-flex justify-content-between align-items-center border-bottom">
+      <div class="offer-title d-flex align-items-center px-3">
+        <span class="offer-title-text fs-5 text-nowrap"></span>
+      </div>
+      <div class="px-3 py-3 text-nowrap fs-7 fw-bold">
+        <span class="shipping-cost"></span> SHIPPING
+      </div>
+    </div>
+    <div class="offer-content d-flex align-items-center ps-4 py-2">
+      <div class="offer-content-img">
+        <img src="" class="img-fluid p-image">
+      </div>
+      <div class="offer-content-info pe-2 ms-3">
+        <div class="offer-content-price-each text-primary">
+          <span class="price-each h4 fw-bold"></span>
+          <span class="fs-8 fw-light">/each</span>
+        </div>
+        <div class="offer-content-price-orig text-secondary">
+          <s>Orig <span class="price-each-retail"></span></s>
+        </div>
+        <div class="offer-content-price-total h6 fw-bold text-success">
+          Total: <span class="price-total"></span>
+        </div>
+      </div>
+    </div>`;
 
   const container = document.querySelector(".offers");
 
@@ -330,18 +381,11 @@ const renderPackages = () => {
     item.querySelector(".price-each-retail").textContent =
       campaign.currency.format(offers.priceRetail);
 
-    // prices
     let priceElement = item.querySelector(".price-each");
     let priceTotalElement = item.querySelector(".price-total");
 
     priceElement.textContent = campaign.currency.format(package.price);
-    priceTotalElement.textContent = campaign.currency.format(
-      package.priceTotal
-    );
-
-    const truncateByDecimalPlace = (value, numDecimalPlaces) =>
-      Math.trunc(value * Math.pow(10, numDecimalPlaces)) /
-      Math.pow(10, numDecimalPlaces);
+    priceTotalElement.textContent = campaign.currency.format(package.priceTotal);
 
     if (package.shippingPrice != 0) {
       item.querySelector(".shipping-cost").textContent = package.shippingPrice;
@@ -359,30 +403,25 @@ const renderPackages = () => {
  */
 const calculateTotal = () => {
   let selectedPackage = document.querySelector(".offer.selected");
-  let packagePrice;
-  let shippingPrice = selectedPackage.dataset.priceShipping;
+  if (!selectedPackage) return;
 
-  packagePrice = selectedPackage.dataset.priceTotal;
+  let packagePrice = parseFloat(selectedPackage.dataset.priceTotal);
+  let shippingPrice = parseFloat(selectedPackage.dataset.priceShipping);
+  let checkoutTotal = packagePrice + shippingPrice;
 
-  const warrantyIsChecked = warrantyCheckbox && warrantyCheckbox.checked;
-  if (warrantyIsChecked) {
-    const qty = parseInt(
-      document.querySelector(".offer.selected")?.dataset?.quantity || 1
-    );
-    checkoutTotal += qty * 2; // $2 por item de garantia
+  // Add warranty cost if selected
+  if (warrantyCheckbox && warrantyCheckbox.checked) {
+    const qty = parseInt(selectedPackage.dataset.quantity || "1", 10);
+    checkoutTotal += qty * 2; // $2 per warranty item
   }
 
-  let checkoutTotal = parseFloat(packagePrice) + parseFloat(shippingPrice);
-
-  let orderTotal = document.querySelector(".order-summary-total-value");
-
-  orderTotal.textContent = campaign.currency.format(checkoutTotal);
+  document.querySelector(".order-summary-total-value").textContent = 
+    campaign.currency.format(checkoutTotal);
 };
 
 //
 // Inits & Event Listeners
 //
-
 document.addEventListener("DOMContentLoaded", function (event) {
   renderPackages();
 
@@ -395,7 +434,6 @@ document.addEventListener("DOMContentLoaded", function (event) {
   finalLineArr.push(firstLineItem);
 
   const summaryShipPrice = document.querySelector(".selected-shipping-price");
-
   const $offer = document.querySelectorAll(".offer");
 
   if ($offer) {
@@ -404,26 +442,19 @@ document.addEventListener("DOMContentLoaded", function (event) {
         el.classList.toggle("selected");
 
         let pid = el.dataset.packageId;
-
         let pName = el.dataset.name;
-
         let pPriceEach = el.dataset.priceEach;
-
         let pPriceShipping = el.dataset.priceShipping;
-
         let shippingMethod = el.dataset.shippingMethod;
-
         let pQuantity = el.dataset.quantity;
 
         document.getElementById("shipping_method").value = shippingMethod;
         document.querySelector(".selected-product-name").textContent = pName;
-
         document.querySelector(".selected-product-price").textContent =
           campaign.currency.format(pPriceEach);
 
         if (pPriceShipping != 0.0) {
-          summaryShipPrice.textContent =
-            campaign.currency.format(pPriceShipping);
+          summaryShipPrice.textContent = campaign.currency.format(pPriceShipping);
         } else {
           summaryShipPrice.textContent = "FREE";
         }
@@ -435,9 +466,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
         });
 
         firstLineItem.package_id = pid;
-
         console.log("Change Line Items:", finalLineArr);
-
         calculateTotal();
       });
     });
@@ -465,6 +494,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 
+  // Billing address toggle
   const billingToggle = document.getElementById("same-as-billing");
   const billingSection = document.getElementById("billing-address-form");
 
@@ -482,12 +512,22 @@ document.addEventListener("DOMContentLoaded", function (event) {
       });
 
       if (isSameAddress) {
-        // Clear error msg
-        const billingErrors =
-          billingSection.querySelectorAll(".invalid-message");
+        const billingErrors = billingSection.querySelectorAll(".invalid-message");
         billingErrors.forEach((el) => (el.textContent = ""));
       }
     });
+  }
+
+  // Warranty checkbox event listener
+  if (warrantyCheckbox) {
+    warrantyCheckbox.addEventListener('change', function(e) {
+        handleWarrantySelection(e.target.checked);
+    });
+    
+    // Initialize if already checked
+    if (warrantyCheckbox.checked) {
+        handleWarrantySelection(true);
+    }
   }
 
   console.log("Default Line Items:", finalLineArr);
@@ -499,13 +539,11 @@ lastName.addEventListener("blur", createProspect);
 email.addEventListener("blur", createProspect);
 
 btnPaypal.addEventListener("click", (event) => {
-  // create a temporary submit btn to trigger validation
   const tempSubmit = document.createElement("button");
   tempSubmit.type = "submit";
   tempSubmit.style.display = "none";
   formEl.appendChild(tempSubmit);
 
-  // trigger validation
   validate.onSuccess(() => {
     console.log("Paypal Button Clicked");
     document.getElementById("payment_method").value = "paypal";

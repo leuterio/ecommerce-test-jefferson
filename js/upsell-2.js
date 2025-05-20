@@ -2,13 +2,14 @@ const btnUpsell = document.querySelector('.btn-success');
 const quantitySelect = document.getElementById('quantity');
 const basePrice = 10;
 const packageId = 8;
+
 /**
  * Get Order Details for Upsell page
-*/
+ */
 const getOrder = async () => {
     console.log("get order");
     try {
-        const response = await fetch((ordersURL + refId + '/'), {
+        const response = await fetch(`${ordersURL}${refId}/`, {
             method: 'GET',
             headers,
         });
@@ -33,29 +34,38 @@ const retrieveOrder = campaign.once(getOrder);
 
 /**
  * Create Upsell
-*/
+ */
 const createUpsell = async () => {
     console.log("create upsell");
 
-    const quantity = parseInt(quantitySelect.value); // pega quantidade selecionada
-    const orderData = {
-        "lines": [
-            {
-                "package_id": packageId,
-                "quantity": quantity
-            }
-        ]
-    };
+    const quantity = parseInt(quantitySelect.value || "1", 10);
+
+    // Obter dados da garantia
+    const warrantySelected = sessionStorage.getItem("warranty_selected") === "true";
+    const warrantyQuantity = parseInt(sessionStorage.getItem("warranty_quantity") || "1", 10);
+
+    // Criar array de itens
+    const upsellLineItems = [
+        {
+            package_id: packageId,
+            quantity: quantity
+        },
+        ...(warrantySelected ? [{
+            package_id: 7, // Garantia
+            quantity: warrantyQuantity
+        }] : [])
+    ];
 
     btnUpsell.disabled = true;
     btnUpsell.textContent = btnUpsell.dataset.loadingText;
 
     try {
-        const response = await fetch((ordersURL + refId + '/upsells/'), {
+        const response = await fetch(`${ordersURL}${refId}/upsells/`, {
             method: 'POST',
             headers,
-            body: JSON.stringify(orderData),
+            body: JSON.stringify({ lines: upsellLineItems }),
         });
+
         const result = await response.json();
 
         if (!response.ok) {
@@ -77,20 +87,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const sendUpsell = campaign.once(createUpsell);
 
-    const clickHandler = () => {
+    btnUpsell.addEventListener('click', () => {
         sendUpsell();
-    };
+    });
 
-    btnUpsell.addEventListener('click', clickHandler);
-
-    // redirect on "no, thanks" click
     [...document.getElementsByClassName('upsell-no')].forEach(anchor => {
         anchor.href = campaign.nextStep(nextURL);
     });
 
-    // update price
     quantitySelect.addEventListener('change', () => {
-        const qty = parseInt(quantitySelect.value);
+        const qty = parseInt(quantitySelect.value || "1", 10);
         const total = (qty * basePrice).toFixed(2);
         document.getElementById('total-price').textContent = total;
     });
