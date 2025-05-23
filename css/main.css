@@ -13850,3 +13850,9 @@ ul.up-list li {
 .warranty-text {
   font-size: 14px;
 }
+
+#quantity {
+  width: 80px;
+  margin-right: auto;
+  margin-left: auto;
+}
