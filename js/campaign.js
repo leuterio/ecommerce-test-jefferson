@@ -3,7 +3,7 @@
 // 
 
 // Cloudflare Worker Proxy (remover e verificar allowed domains)
-const workerUrl = 'https://your-worker-name.your-subdomain.workers.dev';
+const workerUrl = 'https://ecommerce-test.jeffersonleuterio.workers.dev';
 
 const campaignRetrieveURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/campaigns/')}`;
 const cartsCreateURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/carts/')}`;
