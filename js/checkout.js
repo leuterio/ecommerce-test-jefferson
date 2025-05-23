@@ -250,7 +250,9 @@ const createOrder = async () => {
     },
     shipping_method: data.shipping_method,
     success_url: campaign.nextStep(nextURL),
-    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
+    attribution: {
+      metadata: warrantyCheckbox.checked ? { extended_warranty: "true" } : {}
+    }
   };
 
   if (!isBillingSameAsShipping) {
@@ -335,7 +337,9 @@ const createPayPalOrder = async () => {
     },
     shipping_method: data.shipping_method,
     success_url: campaign.nextStep(nextURL),
-    metadata: warrantyCheckbox.checked ? { extended_warranty: true } : {},
+    attribution: {
+      metadata: warrantyCheckbox.checked ? { extended_warranty: "true" } : {}
+    }
   };
 
   try {
