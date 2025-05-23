@@ -28,14 +28,6 @@ const btnPaypal = document.querySelector(".pay-with-paypal");
 const btnCC = document.querySelector(".pay-with-cc");
 const loadingSpinner = document.getElementById("loadingSpinner");
 
-// initialize warranty from sessionStorage if available
-if (
-  sessionStorage.getItem("warranty_selected") === "true" &&
-  warrantyCheckbox
-) {
-  warrantyCheckbox.checked = true;
-}
-
 /**
  *  Get Campaign
  */
