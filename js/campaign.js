@@ -2,10 +2,12 @@
 // Variables
 // 
 
-const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // or host your own
-const campaignRetrieveURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/campaigns/';
-const cartsCreateURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/carts/';
-const ordersURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/orders/';
+// Cloudflare Worker Proxy (remover e verificar allowed domains)
+const workerUrl = 'https://your-worker-name.your-subdomain.workers.dev';
+
+const campaignRetrieveURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/campaigns/')}`;
+const cartsCreateURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/carts/')}`;
+const ordersURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/orders/')}`;
 
 const headers = {
   'Authorization': 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
