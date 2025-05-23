@@ -15,7 +15,6 @@ const getOrderReceipt = async () => {
             console.log('Something went wrong');
             return;
         }
-        console.log(order);
         show(order)
 
     } catch (error) {

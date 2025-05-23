@@ -110,7 +110,6 @@ validate
         }
     })
     .onSuccess((event) => {
-        console.log('Validation passed, submitting...');
         document.getElementById('payment_method').value = 'card_token';
         Spreedly.validate();
     });

@@ -32,7 +32,6 @@ const loadingSpinner = document.getElementById("loadingSpinner");
  *  Get Campaign
  */
 const getCampaign = async () => {
-  console.log("get campaign");
   try {
     const response = await fetch(campaignRetrieveURL, {
       method: "GET",
@@ -44,8 +43,6 @@ const getCampaign = async () => {
       console.log("Something went wrong");
       return;
     }
-
-    console.log(data);
     getCampaignData(data);
   } catch (error) {
     console.log(error);
@@ -168,7 +165,6 @@ const handleWarrantySelection = (selected) => {
  *  Create Cart / New Prospect
  */
 const createCart = async () => {
-  console.log("create prospect");
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
 
@@ -204,7 +200,6 @@ const createCart = async () => {
  * Use Create Order with Credit Card
  */
 const createOrder = async () => {
-  console.log("create order");
 
   loadingSpinner.style.display = "flex";
   btnCC.disabled = true;
@@ -262,7 +257,6 @@ const createOrder = async () => {
     };
   }
 
-  console.log(orderData);
 
   try {
     const response = await fetch(ordersURL, {
@@ -316,7 +310,6 @@ const createOrder = async () => {
  * Use Create Order with PayPal
  */
 const createPayPalOrder = async () => {
-  console.log("create order paypal");
   
   // Show loading spinner
   loadingSpinner.style.display = "flex";
@@ -488,13 +481,11 @@ const calculateTotal = () => {
   if (warrantyCheckbox?.checked) {
     const qty = parseInt(selectedPackage.dataset.quantity || "1", 10);
     checkoutTotal += qty * 2;
-    console.log(`Warranty added: ${qty} x $2.00`);
   }
 
   const totalElement = document.querySelector(".order-summary-total-value");
   if (totalElement) {
     totalElement.textContent = campaign.currency.format(checkoutTotal);
-    console.log("New Total:", totalElement.textContent);
   }
 };
 
@@ -646,8 +637,6 @@ document.addEventListener("DOMContentLoaded", function (event) {
       }
     }
   }
-
-  console.log("Initial line items:", JSON.stringify(finalLineArr, null, 2));
   calculateTotal();
 });
 
@@ -662,7 +651,6 @@ btnPaypal.addEventListener("click", (event) => {
   formEl.appendChild(tempSubmit);
 
   validate.onSuccess(() => {
-    console.log("Paypal Button Clicked");
     document.getElementById("payment_method").value = "paypal";
     createPayPalOrder();
     formEl.removeChild(tempSubmit);
