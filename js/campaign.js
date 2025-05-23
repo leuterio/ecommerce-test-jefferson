@@ -1,13 +1,9 @@
 // 
 // Variables
 // 
-
-// Cloudflare Worker Proxy (remover e verificar allowed domains)
-const workerUrl = 'https://ecommerce-test.jeffersonleuterio.workers.dev';
-
-const campaignRetrieveURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/campaigns/')}`;
-const cartsCreateURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/carts/')}`;
-const ordersURL = `${workerUrl}?url=${encodeURIComponent('https://campaigns.apps.29next.com/api/v1/orders/')}`;
+const campaignRetrieveURL = 'https://campaigns.apps.29next.com/api/v1/campaigns/';
+const cartsCreateURL = 'https://campaigns.apps.29next.com/api/v1/carts/';
+const ordersURL = 'https://campaigns.apps.29next.com/api/v1/orders/';
 
 const headers = {
   'Authorization': 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
