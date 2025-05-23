@@ -26,6 +26,7 @@ const validErrBlock = document.getElementById("validation-error-block");
 // pay method buttons
 const btnPaypal = document.querySelector(".pay-with-paypal");
 const btnCC = document.querySelector(".pay-with-cc");
+const loadingSpinner = document.getElementById("loadingSpinner");
 
 // initialize warranty from sessionStorage if available
 if (
@@ -72,7 +73,6 @@ const getCampaignData = (data) => {
 /**
  * Warranty Selection Handler
  */
-
 const updateOrderSummaryWithWarranty = (selected, quantity) => {
   const warrantySummary = document.querySelector(".warranty-summary");
 
@@ -214,6 +214,9 @@ const createCart = async () => {
 const createOrder = async () => {
   console.log("create order");
 
+  loadingSpinner.style.display = "flex";
+  btnCC.disabled = true;
+
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
   const isBillingSameAsShipping =
@@ -280,6 +283,7 @@ const createOrder = async () => {
     if (!response.ok) {
       btnCC.disabled = false;
       btnCC.textContent = btnCC.dataset.text;
+      loadingSpinner.style.display = "none";
 
       const msg =
         result.non_field_errors ||
@@ -311,6 +315,8 @@ const createOrder = async () => {
     }
   } catch (error) {
     console.log(error);
+    loadingSpinner.style.display = "none";
+    btnCC.disabled = false;
   }
 };
 
@@ -319,11 +325,13 @@ const createOrder = async () => {
  */
 const createPayPalOrder = async () => {
   console.log("create order paypal");
+  
+  // Show loading spinner
+  loadingSpinner.style.display = "flex";
+  btnPaypal.disabled = true;
 
   const formData = new FormData(formEl);
   const data = Object.fromEntries(formData);
-
-  btnPaypal.disabled = true;
 
   const orderPPData = {
     user: {
@@ -354,6 +362,7 @@ const createPayPalOrder = async () => {
       console.log("Something went wrong");
       console.log(orderPPData);
       btnPaypal.disabled = false;
+      loadingSpinner.style.display = "none";
       return;
     }
 
@@ -376,6 +385,8 @@ const createPayPalOrder = async () => {
     window.location.href = result.payment_complete_url;
   } catch (error) {
     console.log(error);
+    loadingSpinner.style.display = "none";
+    btnPaypal.disabled = false;
   }
 };
 
