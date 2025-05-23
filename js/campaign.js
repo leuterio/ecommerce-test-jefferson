@@ -2,9 +2,10 @@
 // Variables
 // 
 
-const campaignRetrieveURL = 'https://campaigns.apps.29next.com/api/v1/campaigns/';
-const cartsCreateURL = 'https://campaigns.apps.29next.com/api/v1/carts/'
-const ordersURL = 'https://campaigns.apps.29next.com/api/v1/orders/'
+const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // or host your own
+const campaignRetrieveURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/campaigns/';
+const cartsCreateURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/carts/';
+const ordersURL = proxyUrl + 'https://campaigns.apps.29next.com/api/v1/orders/';
 
 const headers = {
   'Authorization': 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui',
