@@ -13882,6 +13882,12 @@ ul.up-list li {
   font-weight: bolder;
 }
 
+#quantity {
+  width: 80px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
