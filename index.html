@@ -530,61 +530,62 @@
       </div>
     </div>
   </footer>
+
+  <script type="text/javascript">
+    const publicKey = 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui';
+    const nextURL = '/upsell.html';
+    const offers = {
+      priceRetail: 20.0,
+      packages: [
+        {
+          id: 2,
+          image: 'img/offer-x2.png',
+          quantity: 2,
+          name: '2x Product',
+          price: 18.0,
+          priceTotal: 36.0,
+          shippingPrice: 0.0,
+          shippingMethod: 2,
+        },
+        {
+          id: 4,
+          image: 'img/offer-x4.png',
+          quantity: 4,
+          name: '4x Product',
+          price: 16.0,
+          priceTotal: 64.0,
+          shippingPrice: 0.0,
+          shippingMethod: 2,
+        },
+        {
+          id: 3,
+          image: 'img/offer-x3.png',
+          quantity: 3,
+          name: '3x Product',
+          price: 17.0,
+          priceTotal: 51.0,
+          shippingPrice: 0.0,
+          shippingMethod: 2,
+        },
+        {
+          id: 1,
+          image: 'img/offer-x1.png',
+          quantity: 1,
+          name: '1x Product',
+          price: 19.0,
+          priceTotal: 19.0,
+          shippingPrice: 7.99,
+          shippingMethod: 1,
+        },
+      ],
+    };
+    let selectedOfferId = '2';
+  </script>
+  <script src="https://core.spreedly.com/iframe/iframe-v1.min.js"></script>
+  <script src="https://unpkg.com/just-validate@4.2.0/dist/just-validate.production.min.js"></script>
+  <script type="text/javascript" src="js/campaign.js"></script>
+  <script type="text/javascript" src="js/checkout.js"></script>
+  <script type="text/javascript" src="js/form.js"></script>
 </body>
-<script type="text/javascript">
-  const publicKey = 'dkPUiKTlaZAv1E3NpapBg9aLk4EXZiCfnSIKWeui';
-  const nextURL = '/upsell.html';
-  const offers = {
-    priceRetail: 20.0,
-    packages: [
-      {
-        id: 2,
-        image: 'img/offer-x2.png',
-        quantity: 2,
-        name: '2x Product',
-        price: 18.0,
-        priceTotal: 36.0,
-        shippingPrice: 0.0,
-        shippingMethod: 2,
-      },
-      {
-        id: 4,
-        image: 'img/offer-x4.png',
-        quantity: 4,
-        name: '4x Product',
-        price: 16.0,
-        priceTotal: 64.0,
-        shippingPrice: 0.0,
-        shippingMethod: 2,
-      },
-      {
-        id: 3,
-        image: 'img/offer-x3.png',
-        quantity: 3,
-        name: '3x Product',
-        price: 17.0,
-        priceTotal: 51.0,
-        shippingPrice: 0.0,
-        shippingMethod: 2,
-      },
-      {
-        id: 1,
-        image: 'img/offer-x1.png',
-        quantity: 1,
-        name: '1x Product',
-        price: 19.0,
-        priceTotal: 19.0,
-        shippingPrice: 7.99,
-        shippingMethod: 1,
-      },
-    ],
-  };
-  let selectedOfferId = '2';
-</script>
-<script src="https://core.spreedly.com/iframe/iframe-v1.min.js"></script>
-<script src="https://unpkg.com/just-validate@4.2.0/dist/just-validate.production.min.js"></script>
-<script type="text/javascript" src="js/campaign.js"></script>
-<script type="text/javascript" src="js/checkout.js"></script>
-<script type="text/javascript" src="js/form.js"></script>
 
 </html>
